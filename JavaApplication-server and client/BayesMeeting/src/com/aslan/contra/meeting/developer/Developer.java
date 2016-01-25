@@ -1,4 +1,4 @@
-package com.aslan.contra.meeting.client;
+package com.aslan.contra.meeting.developer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -9,7 +9,7 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
-public class Client {
+public class Developer {
 
 	private static Socket socket;
 
@@ -25,17 +25,16 @@ public class Client {
 			OutputStreamWriter osw = new OutputStreamWriter(os);
 			BufferedWriter bw = new BufferedWriter(osw);
 
-			// String dataValue = "2.35,1.0,1.0,10.56";
-			// String dataValue = "219.8523,1000,0,44.963,0.001,1"; //is meeting
-			String dataValue = "10.8523,1000,0,10.963,5,1"; // not in meeting
+			// String query;
+			QueryLanguage q = new QueryLanguage();
+			String query = q.isInMeeting(1);
 
 			// String sendMessage = number + "\n";
-			String sendMessageNew = dataValue + "\n";
+			// String sendMessageNew = dataValue + "\n";
 
-			bw.write(sendMessageNew);
+			bw.write(query);
 			bw.flush();
-			System.out
-					.println("Message sent to the server : " + sendMessageNew);
+			System.out.println("Message sent to the server : " + query);
 
 			// Get the return message from the server
 			InputStream is = socket.getInputStream();
@@ -54,4 +53,5 @@ public class Client {
 			}
 		}
 	}
+
 }

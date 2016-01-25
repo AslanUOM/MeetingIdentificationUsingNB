@@ -8,8 +8,10 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Map;
+
 import com.aslan.contra.meeting.server.NaiveBayesClassifier.NaiveBayesClassifier;
 
 public class Server {
@@ -36,50 +38,225 @@ public class Server {
 				System.out.println("Message received from client is "
 						+ dataValue);
 
+				// if the message from developer
+				String[] tempString = dataValue.split(",");
+				String mesString = tempString[0];
+				int userID = Integer.parseInt(tempString[1]);
+
 				// forming the return message
 				String returnMessage = "";
-				try {
 
-					// NaiveBayesClassifier object
-					NaiveBayesClassifier obj = new NaiveBayesClassifier();
+				if (mesString.equals("IsUserInMeeting")) {
 
-					// locations for training and test data set
-					String trainingCsvFile = "resources/datasets/training/trainingData.csv";
+					String url = "jdbc:mysql://localhost:3306/";
+					String dbName = "meeting";
+					String driver = "com.mysql.jdbc.Driver";
+					String userName = "root";
+					String password = "mysql";
 
-					String tra = new java.io.File("").getAbsolutePath();
-					// String testCsvFile =
-					// "PATH_TO_TEST_DATA_SET";
+					Class.forName(driver).newInstance();
+					Connection conn = DriverManager.getConnection(url + dbName,
+							userName, password);
 
-					ArrayList<double[]> trainingDataset = obj
-							.loadCsv(trainingCsvFile);
-					// ArrayList<double[]> testDataset =
-					// obj.loadCsv(testCsvFile);
-					ArrayList<double[]> testDataset = new ArrayList<double[]>();
-					// make sure 4 is number of columns in test data set
-					String[] dataValueArrayString = dataValue.split(",");
-					double[] dataValueArray = new double[4];
+					try {
+						Class.forName(driver).newInstance();
+						conn = DriverManager.getConnection(url + dbName,
+								userName, password);
+						Statement st = conn.createStatement();
+						ResultSet res = st
+								.executeQuery("SELECT * FROM information where userID="
+										+ userID + " ");
+						boolean msg = false;
+						while (res.next()) {
+							int id = res.getInt("userID");
+							msg = res.getBoolean("isMeeting");
+							System.out.println(id + "\t" + msg);
+						}
+						if (msg) {
+							returnMessage = "User is in a Meeting ! :) taken by database";
+						} else {
+							returnMessage = "User is not in a Meeting :/ taken by database";
+						}
+					} catch (Exception e) {
 
-					for (int i = 0; i < dataValueArray.length; i++) {
-						dataValueArray[i] = Double
-								.parseDouble(dataValueArrayString[i]);
+					} finally {
+						System.out.println("from db" + returnMessage);
+						conn.close();
 					}
-					testDataset.add(dataValueArray);
 
-					// prepare model
-					Map<Double, ArrayList<double[]>> summaries = obj
-							.summarizeByClass(trainingDataset);
+					System.out.println("database access is successful");
+				}
+				// to data set access
+				else {
 
-					// test model
-					ArrayList<String> predictions = obj.getPredictions(
-							summaries, testDataset);
+					try {
 
-					for (int i = 0; i < predictions.size(); i++) {
-						String x = predictions.get(i);
-						returnMessage += "Prediction: " + x + " __ ";
+						// NaiveBayesClassifier object
+						NaiveBayesClassifier obj = new NaiveBayesClassifier();
+
+						// locations for training and test data set
+						String trainingCsvFile = "resources/datasets/training/trainingData.csv";
+
+						String tra = new java.io.File("").getAbsolutePath();
+						// String testCsvFile =
+						// "PATH_TO_TEST_DATA_SET";
+
+						ArrayList<double[]> trainingDataset = obj
+								.loadCsv(trainingCsvFile);
+						// ArrayList<double[]> testDataset =
+						// obj.loadCsv(testCsvFile);
+						ArrayList<double[]> testDataset = new ArrayList<double[]>();
+						// make sure 4 is number of columns in test data set
+						String[] dataValueArrayString = dataValue.split(",");
+						double[] dataValueArray = new double[6];
+
+						for (int i = 0; i < dataValueArray.length; i++) {
+							dataValueArray[i] = Double
+									.parseDouble(dataValueArrayString[i]);
+						}
+
+						double Light = dataValueArray[0];
+						double SoundLevel = dataValueArray[3];
+						double LinearAcceleration = dataValueArray[4];
+
+						// get userID
+						int uID = (int) dataValueArray[5];
+
+						boolean Light_M = false;
+						boolean SoundLevel_M = false;
+						boolean LinearAcceleration_M = false;
+
+						if (100 < Light && Light < 300)
+							Light_M = true;
+						if (40 < SoundLevel && SoundLevel < 70)
+							SoundLevel_M = true;
+						if (0.0 <= LinearAcceleration && LinearAcceleration < 2)
+							LinearAcceleration_M = true;
+
+						// test set ignore linear acceleration
+						double[] dataValueArrayForTest = new double[4];
+						for (int i = 0; i < dataValueArray.length - 2; i++) {
+							dataValueArrayForTest[i] = dataValueArray[i];
+						}
+
+						testDataset.add(dataValueArrayForTest);
+
+						// prepare model
+						Map<Double, ArrayList<double[]>> summaries = obj
+								.summarizeByClass(trainingDataset);
+
+						// test model
+						ArrayList<String> predictions = obj.getPredictions(
+								summaries, testDataset);
+
+						// for (int i = 0; i < predictions.size(); i++) {
+						String x = predictions.get(0);
+						// returnMessage += "Prediction: " + x + " __ ";
+						// }
+
+						int isInMeetingNB = Integer.parseInt(x);
+						boolean isMeetingNB = false;
+
+						if (isInMeetingNB == 1)
+							isMeetingNB = true;
+
+						boolean isMeeting = false;
+
+						// ABC = (Light_M && SoundLevel_M &&
+						// LinearAcceleration_M)
+						// AB!CD= (Light_M && SoundLevel_M &&
+						// !LinearAcceleration_M
+						// && isMeetingNB)
+						// A!BCD= (Light_M && !SoundLevel_M &&
+						// LinearAcceleration_M
+						// && isMeetingNB)
+						// !ABCD= (!Light_M && SoundLevel_M &&
+						// LinearAcceleration_M
+						// && isMeetingNB)
+
+						if ((Light_M && SoundLevel_M && LinearAcceleration_M)
+								|| (Light_M && SoundLevel_M
+										&& !LinearAcceleration_M && isMeetingNB)
+								|| (Light_M && !SoundLevel_M
+										&& LinearAcceleration_M && isMeetingNB)
+								|| (!Light_M && SoundLevel_M
+										&& LinearAcceleration_M && isMeetingNB))
+							isMeeting = true;
+
+						if (isMeeting) {
+							returnMessage = "User is in a Meeting ! :)";
+
+							String url = "jdbc:mysql://localhost:3306/";
+							String dbName = "meeting";
+							String driver = "com.mysql.jdbc.Driver";
+							String userName = "root";
+							String password = "mysql";
+
+							Class.forName(driver).newInstance();
+							Connection conn = DriverManager.getConnection(url
+									+ dbName, userName, password);
+
+							try {
+								Class.forName(driver).newInstance();
+								conn = DriverManager.getConnection(
+										url + dbName, userName, password);
+								Statement st = conn.createStatement();
+								int res = st
+										.executeUpdate("UPDATE information SET isMeeting = "
+												+ 1
+												+ " WHERE userID = "
+												+ uID
+												+ " ");
+
+							} catch (Exception e) {
+
+							} finally {
+								System.out.println("from db" + returnMessage);
+								conn.close();
+							}
+
+							System.out.println("database updated successfully");
+
+						} else {
+							returnMessage = "User is not in a Meeting :/";
+
+							String url = "jdbc:mysql://localhost:3306/";
+							String dbName = "meeting";
+							String driver = "com.mysql.jdbc.Driver";
+							String userName = "root";
+							String password = "mysql";
+
+							Class.forName(driver).newInstance();
+							Connection conn = DriverManager.getConnection(url
+									+ dbName, userName, password);
+
+							try {
+								Class.forName(driver).newInstance();
+								conn = DriverManager.getConnection(
+										url + dbName, userName, password);
+								Statement st = conn.createStatement();
+								int res = st
+										.executeUpdate("UPDATE information SET isMeeting = "
+												+ 0
+												+ " WHERE userID = "
+												+ uID
+												+ " ");
+
+							} catch (Exception e) {
+
+							} finally {
+								System.out.println("from db" + returnMessage);
+								conn.close();
+							}
+
+							System.out.println("database updated successfully");
+						}
+
+					} catch (Exception e) {
+
 					}
 
-				} catch (Exception e) {
-
+					// this is where the upper else is ending
 				}
 
 				// Sending the response back to the client.
