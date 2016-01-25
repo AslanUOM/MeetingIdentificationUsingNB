@@ -36,7 +36,7 @@ public class Server {
 				System.out.println("Message received from client is "
 						+ dataValue);
 
-				//forming the return message
+				// forming the return message
 				String returnMessage = "";
 				try {
 
@@ -44,7 +44,9 @@ public class Server {
 					NaiveBayesClassifier obj = new NaiveBayesClassifier();
 
 					// locations for training and test data set
-					String trainingCsvFile = "PATH_TO_TRAINIG_DATA_SET";
+					String trainingCsvFile = "resources/datasets/training/trainingData.csv";
+
+					String tra = new java.io.File("").getAbsolutePath();
 					// String testCsvFile =
 					// "PATH_TO_TEST_DATA_SET";
 
@@ -77,7 +79,7 @@ public class Server {
 					}
 
 				} catch (Exception e) {
-					
+
 				}
 
 				// Sending the response back to the client.
