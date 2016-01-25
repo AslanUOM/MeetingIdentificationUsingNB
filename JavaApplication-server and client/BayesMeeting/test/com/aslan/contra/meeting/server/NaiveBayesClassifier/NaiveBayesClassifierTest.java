@@ -79,20 +79,6 @@ public class NaiveBayesClassifierTest {
 		ArrayList<double[]> testClass0 = testSummaries.get(0.0);
 		ArrayList<double[]> testClass1 = testSummaries.get(1.0);
 
-		System.out.println("mean value of class0: " + testClass0.get(0)[0]
-				+ " stdev is: " + testClass0.get(0)[1]);
-		System.out.println("mean value of class0: " + testClass0.get(1)[0]
-				+ " stdev is: " + testClass0.get(1)[1]);
-		System.out.println("mean value of class0: " + testClass0.get(2)[0]
-				+ " stdev is: " + testClass0.get(2)[1]);
-		System.out.println("*****");
-		System.out.println("mean value of class1: " + testClass1.get(0)[0]
-				+ " stdev is: " + testClass1.get(0)[1]);
-		System.out.println("mean value of class1: " + testClass1.get(1)[0]
-				+ " stdev is: " + testClass1.get(1)[1]);
-		System.out.println("mean value of class1: " + testClass1.get(2)[0]
-				+ " stdev is: " + testClass1.get(2)[1]);
-
 		assertEquals("size of testClass0 must be:  3", 3, testClass0.size());
 		assertEquals("size of testClass0 must be:  3", 3, testClass1.size());
 
